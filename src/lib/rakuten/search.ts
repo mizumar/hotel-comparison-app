@@ -1,0 +1,48 @@
+import { Hotel } from "@/src/types/hotel";
+
+export async function searchHotels(keyword: string): Promise<Hotel[]> {
+  const appId = process.env.RAKUTEN_APPLICATION_ID;
+  const accessKey = process.env.RAKUTEN_ACCESS_KEY;
+  // 環境変数からトンネルURLを取得（未設定時はフォールバック）
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "https://random-words-1234.trycloudflare.com";
+
+  if (!appId || !accessKey) {
+    throw new Error("RAKUTEN_APPLICATION_ID or RAKUTEN_ACCESS_KEY is not set");
+  }
+
+  const url = `https://openapi.rakuten.co.jp/engine/api/Travel/KeywordHotelSearch/20260731?format=json&keyword=${encodeURIComponent(
+    keyword,
+  )}&applicationId=${appId.trim()}&accessKey=${accessKey.trim()}`;
+
+  const res = await fetch(url, {
+    headers: {
+      Referer: appUrl,
+      Origin: appUrl,
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error("楽天APIエラー詳細 (Raw):", errorText);
+    throw new Error(`Failed to fetch hotels: ${res.status}`);
+  }
+
+  const data = await res.json();
+  if (!data.hotels) return [];
+
+  return data.hotels.map((item: any) => {
+    const basicInfo = item.hotel[0].hotelBasicInfo;
+    return {
+      id: String(basicInfo.hotelNo),
+      name: basicInfo.hotelName,
+      minCharge: basicInfo.hotelMinCharge,
+      address: `${basicInfo.address1}${basicInfo.address2}`,
+      access: basicInfo.access,
+      imageUrl: basicInfo.hotelImageUrl,
+      rakutenUrl: basicInfo.planListUrl,
+    };
+  });
+}
