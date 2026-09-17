@@ -6,7 +6,7 @@ export async function searchHotels(keyword: string): Promise<Hotel[]> {
   // 環境変数からトンネルURLを取得（未設定時はフォールバック）
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL ||
-    "https://random-words-1234.trycloudflare.com";
+    "https://hotel-comparison-app.vercel.app/";
 
   if (!appId || !accessKey) {
     throw new Error("RAKUTEN_APPLICATION_ID or RAKUTEN_ACCESS_KEY is not set");
