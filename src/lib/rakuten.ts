@@ -3,7 +3,6 @@ import { Hotel } from "@/src/types/hotel";
 export async function searchHotels(keyword: string): Promise<Hotel[]> {
   const appId = process.env.RAKUTEN_APPLICATION_ID;
   const accessKey = process.env.RAKUTEN_ACCESS_KEY;
-  // 環境変数からトンネルURLを取得（未設定時はフォールバック）
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL ||
     "https://hotel-comparison-app.vercel.app/";
@@ -12,11 +11,18 @@ export async function searchHotels(keyword: string): Promise<Hotel[]> {
     throw new Error("RAKUTEN_APPLICATION_ID or RAKUTEN_ACCESS_KEY is not set");
   }
 
-  const url = `https://openapi.rakuten.co.jp/engine/api/Travel/KeywordHotelSearch/20260731?format=json&keyword=${encodeURIComponent(
-    keyword,
-  )}&applicationId=${appId.trim()}&accessKey=${accessKey.trim()}`;
+  // 最新の OpenAPI エンドポイント
+  const endpoint =
+    "https://openapi.rakuten.co.jp/engine/api/Travel/KeywordHotelSearch/20260731";
 
-  const res = await fetch(url, {
+  const params = new URLSearchParams({
+    applicationId: appId.trim(),
+    accessKey: accessKey.trim(),
+    format: "json",
+    keyword: keyword.trim(),
+  });
+
+  const res = await fetch(`${endpoint}?${params.toString()}`, {
     headers: {
       Referer: appUrl,
       Origin: appUrl,
@@ -38,11 +44,11 @@ export async function searchHotels(keyword: string): Promise<Hotel[]> {
     return {
       id: String(basicInfo.hotelNo),
       name: basicInfo.hotelName,
-      minCharge: basicInfo.hotelMinCharge,
-      address: `${basicInfo.address1}${basicInfo.address2}`,
-      access: basicInfo.access,
-      imageUrl: basicInfo.hotelImageUrl,
-      rakutenUrl: basicInfo.planListUrl,
+      minCharge: basicInfo.hotelMinCharge || 0,
+      address: `${basicInfo.address1 || ""}${basicInfo.address2 || ""}`,
+      access: basicInfo.access || "",
+      imageUrl: basicInfo.hotelImageUrl || basicInfo.roomImageUrl || "",
+      rakutenUrl: basicInfo.hotelInformationUrl || basicInfo.planListUrl || "#",
     };
   });
 }
