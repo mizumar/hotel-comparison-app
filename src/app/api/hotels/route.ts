@@ -1,19 +1,20 @@
 import { NextResponse } from "next/server";
-import { searchHotels } from "@/src/lib/rakuten";
+import { searchHotelsByKeyword } from "@/src/lib/rakuten";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const keyword = searchParams.get("keyword");
+  const keyword = searchParams.get("keyword") || undefined;
 
+  // キーワードがない場合のエラーハンドリング
   if (!keyword) {
     return NextResponse.json(
-      { error: "検索キーワードが指定されていません。" },
+      { error: "検索キーワード（エリアや地名、ホテル名）を指定してください。" },
       { status: 400 },
     );
   }
 
   try {
-    const hotels = await searchHotels(keyword);
+    const hotels = await searchHotelsByKeyword(keyword);
     return NextResponse.json({ hotels });
   } catch (error: any) {
     console.error("API Route Error:", error);

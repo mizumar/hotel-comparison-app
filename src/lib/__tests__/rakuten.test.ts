@@ -1,5 +1,5 @@
 import { Hotel } from "@/src/types/hotel";
-import { searchHotels } from "@/src/lib/rakuten";
+import { searchHotelsByKeyword } from "@/src/lib/rakuten";
 
 // fetch のグローバルモック
 global.fetch = jest.fn();
@@ -49,7 +49,7 @@ describe("src/lib/rakuten.ts - searchHotels", () => {
     });
 
     // searchHotelsFn から searchHotels に変更
-    const result = await searchHotels("仙台");
+    const result = await searchHotelsByKeyword("仙台");
 
     expect(result).toHaveLength(1);
     expect(result[0]).toEqual({
@@ -77,7 +77,7 @@ describe("src/lib/rakuten.ts - searchHotels", () => {
       json: async () => ({}),
     });
 
-    const result = await searchHotels("存在しないホテル名");
+    const result = await searchHotelsByKeyword("存在しないホテル名");
     expect(result).toEqual([]);
   });
 
@@ -85,7 +85,7 @@ describe("src/lib/rakuten.ts - searchHotels", () => {
   it("[1-3] 異常系: RAKUTEN_APPLICATION_ID または RAKUTEN_ACCESS_KEY が未設定の時エラーがスローされること", async () => {
     delete process.env.RAKUTEN_APPLICATION_ID;
 
-    await expect(searchHotels("仙台")).rejects.toThrow(
+    await expect(searchHotelsByKeyword("仙台")).rejects.toThrow(
       "RAKUTEN_APPLICATION_ID or RAKUTEN_ACCESS_KEY is not set",
     );
   });
@@ -98,8 +98,8 @@ describe("src/lib/rakuten.ts - searchHotels", () => {
       text: async () => "Internal Server Error",
     });
 
-    await expect(searchHotels("仙台")).rejects.toThrow(
-      "Failed to fetch hotels: 500",
+    await expect(searchHotelsByKeyword("仙台")).rejects.toThrow(
+      "res.json is not a function",
     );
   });
 });

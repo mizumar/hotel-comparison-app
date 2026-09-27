@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { SearchForm } from "@/src/components/SearchForm";
 import { HotelList } from "@/src/components/HotelList";
-import { Hotel } from "@/src/types/hotel";
+import { Hotel, SearchParams } from "@/src/types/hotel";
 
 export default function Home() {
   const [hotels, setHotels] = useState<Hotel[]>([]);
@@ -11,15 +11,24 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
 
-  const handleSearch = async (keyword: string) => {
+  const handleSearch = async (params: SearchParams) => {
     setIsLoading(true);
     setError(null);
     setHasSearched(true);
 
     try {
-      const res = await fetch(
-        `/api/hotels?keyword=${encodeURIComponent(keyword)}`,
-      );
+      // SearchParams オブジェクトから URLSearchParams を構築
+      const queryParams = new URLSearchParams();
+
+      if (params.keyword) queryParams.set("keyword", params.keyword);
+      if (params.checkinDate)
+        queryParams.set("checkinDate", params.checkinDate);
+      if (params.checkoutDate)
+        queryParams.set("checkoutDate", params.checkoutDate);
+      if (params.adultNum)
+        queryParams.set("adultNum", params.adultNum.toString());
+
+      const res = await fetch(`/api/hotels?${queryParams.toString()}`);
       const data = await res.json();
 
       if (!res.ok) {
@@ -42,7 +51,7 @@ export default function Home() {
           ホテル検索
         </h1>
         <p className="text-gray-600">
-          キーワードで全国のホテル・宿を検索できます
+          エリアや日程・人数を指定して全国のホテル・宿を検索できます
         </p>
       </div>
 
@@ -56,7 +65,7 @@ export default function Home() {
 
       {!isLoading && hasSearched && hotels.length === 0 && !error && (
         <p className="text-center text-gray-500 my-12">
-          該当するホテルが見つかりませんでした。別のキーワードでお試しください。
+          該当するホテルが見つかりませんでした。条件を変更してお試しください。
         </p>
       )}
 

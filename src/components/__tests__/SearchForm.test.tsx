@@ -1,38 +1,44 @@
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { SearchForm } from "../SearchForm";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { SearchForm } from "@/src/components/SearchForm";
 
-describe("src/components/SearchForm.tsx", () => {
+describe("SearchForm Component", () => {
   const mockOnSearch = jest.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    mockOnSearch.mockClear();
   });
 
-  // 【3-1】 初期表示 & バリデーション
-  it("[3-1] 未入力時は送信ボタンが disabled であること", () => {
+  // TC-SF-01: 初期表示確認（キーワード入力とボタンのみ）
+  test("TC-SF-01: renders keyword input and submit button", () => {
     render(<SearchForm onSearch={mockOnSearch} isLoading={false} />);
 
-    const button = screen.getByRole("button", { name: "検索" });
-    expect(button).toBeDisabled();
+    expect(
+      screen.getByPlaceholderText(/地名や駅名、ホテル名（例: 仙台、東京）/i),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /検索/i })).toBeInTheDocument();
   });
 
-  // 【3-2】 フォーム送信
-  it("[3-2] キーワード入力後に送信ボタン押下で onSearch が正しく呼ばれること", async () => {
-    const user = userEvent.setup();
+  // TC-SF-02: 正常送信（キーワード検索）
+  test("TC-SF-02: calls onSearch with keyword when submitted", () => {
     render(<SearchForm onSearch={mockOnSearch} isLoading={false} />);
 
     const input =
-      screen.getByPlaceholderText("地名や駅名を入力（例: 仙台、東京）");
-    const button = screen.getByRole("button", { name: "検索" });
+      screen.getByPlaceholderText(/地名や駅名、ホテル名（例: 仙台、東京）/i);
+    fireEvent.change(input, { target: { value: "仙台" } });
 
-    // キーワードを入力
-    await user.type(input, "仙台");
-    expect(button).not.toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: /検索/i }));
 
-    // フォーム送信
-    await user.click(button);
     expect(mockOnSearch).toHaveBeenCalledTimes(1);
-    expect(mockOnSearch).toHaveBeenCalledWith("仙台");
+    expect(mockOnSearch).toHaveBeenCalledWith({ keyword: "仙台" });
+  });
+
+  // TC-SF-05: ローディング状態
+  test("TC-SF-05: disables input and button when isLoading is true", () => {
+    render(<SearchForm onSearch={mockOnSearch} isLoading={true} />);
+
+    expect(screen.getByRole("button", { name: /検索中.../i })).toBeDisabled();
+    expect(
+      screen.getByPlaceholderText(/地名や駅名、ホテル名（例: 仙台、東京）/i),
+    ).toBeDisabled();
   });
 });
