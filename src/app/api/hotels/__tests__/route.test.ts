@@ -1,52 +1,82 @@
 /**
  * @jest-environment node
  */
-import { GET } from "../route";
+import { GET } from "@/src/app/api/hotels/route";
+import * as rakutenModule from "@/src/lib/rakuten";
 
-// searchHotels ロジックをモック化
-jest.mock("@/src/lib/rakuten", () => ({
-  searchHotels: jest.fn(),
-}));
+jest.mock("@/src/lib/rakuten");
 
-import { searchHotels } from "@/src/lib/rakuten";
+let consoleSpy: jest.SpyInstance;
 
-describe("src/app/api/hotels/route.ts - GET", () => {
-  beforeEach(() => {
+beforeEach(() => {
+  // console.error の出力を一時的に抑制
+  consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+});
+
+describe("GET /api/hotels Route Handler", () => {
+  afterEach(() => {
     jest.clearAllMocks();
   });
 
-  // 【2-1】 パラメータ未指定エラー
-  it("[2-1] keyword パラメータなしでリクエストした時にステータス 400 が返ること", async () => {
+  // TC-API-01: パラメータなしエラー
+  test("TC-API-01: returns 400 when no search parameters are provided", async () => {
     const req = new Request("http://localhost:3000/api/hotels");
     const res = await GET(req);
     const data = await res.json();
 
     expect(res.status).toBe(400);
-    expect(data.error).toBe("検索キーワードが指定されていません。");
+    expect(data.error).toBe(
+      "検索キーワード（エリアや地名、ホテル名）を指定してください。",
+    );
   });
 
-  // 【2-2】 正常応答
-  it("[2-2] keyword=仙台 でリクエストした時にステータス 200 とホテル一覧が返ること", async () => {
+  // TC-API-02: キーワード検索
+  test("TC-API-02: calls searchHotelsByKeyword and returns 200 with hotels data", async () => {
     const mockHotels = [
       {
-        id: "100",
-        name: "サンプルホテル",
-        minCharge: 4000,
+        id: "1",
+        name: "テストホテル",
+        minCharge: 5000,
         address: "東京都",
-        access: "東京駅1分",
-        imageUrl: "http://example.com/a.jpg",
-        rakutenUrl: "http://example.com/a",
+        access: "駅徒歩1分",
+        imageUrl: "http://example.com/img.jpg",
+        rakutenUrl: "http://example.com",
       },
     ];
 
-    (searchHotels as jest.Mock).mockResolvedValueOnce(mockHotels);
+    jest
+      .spyOn(rakutenModule, "searchHotelsByKeyword")
+      .mockResolvedValue(mockHotels);
 
-    const req = new Request("http://localhost:3000/api/hotels?keyword=仙台");
+    const req = new Request(
+      "http://localhost:3000/api/hotels?keyword=%E4%BB%99%E5%8F%B0",
+    );
     const res = await GET(req);
     const data = await res.json();
 
     expect(res.status).toBe(200);
     expect(data.hotels).toEqual(mockHotels);
-    expect(searchHotels).toHaveBeenCalledWith("仙台");
+    expect(rakutenModule.searchHotelsByKeyword).toHaveBeenCalledWith("仙台");
+  });
+
+  // TC-API-03: 異常系ハンドリング
+  test("TC-API-03: returns 500 when Rakuten API throws an error", async () => {
+    jest
+      .spyOn(rakutenModule, "searchHotelsByKeyword")
+      .mockRejectedValue(new Error("API Failure"));
+
+    const req = new Request(
+      "http://localhost:3000/api/hotels?keyword=%E4%BB%99%E5%8F%B0",
+    );
+    const res = await GET(req);
+    const data = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(data.error).toBe("API Failure");
+    // console.error が正しく呼び出されたこと自体を検証
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "API Route Error:",
+      expect.any(Error),
+    );
   });
 });
