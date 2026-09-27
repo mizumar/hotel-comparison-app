@@ -1,4 +1,5 @@
 import { Hotel } from "@/src/types/hotel";
+import { FavoriteButton } from "@/src/components/FavoriteButton";
 
 interface HotelListProps {
   hotels: Hotel[];
@@ -25,10 +26,17 @@ export function HotelList({ hotels }: HotelListProps) {
           )}
           <div className="p-4 flex-1 flex flex-col justify-between">
             <div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">
-                {hotel.name}
-              </h3>
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <h3 className="text-lg font-bold text-gray-900 line-clamp-2">
+                  {hotel.name}
+                </h3>
+
+                {/* お気に入りボタン */}
+                <FavoriteButton hotel={hotel} />
+              </div>
+
               <p className="text-sm text-gray-600 mb-1">{hotel.address}</p>
+
               <p className="text-xs text-gray-500 mb-4 line-clamp-2">
                 {hotel.access}
               </p>

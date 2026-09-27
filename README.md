@@ -1,5 +1,9 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## 🚀 デプロイについて
+
+本番環境（Vercel）への公開手順や、楽天APIの設定方法については [Wikiの「本番環境へのデプロイと環境変数」ページ](ここにWikiページのURL) を参照してください。
+
 ## Getting Started
 
 First, run the development server:
