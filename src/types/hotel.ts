@@ -12,6 +12,9 @@ export interface Hotel {
 // 2. 検索フォーム・API リクエスト用の型定義 (新規追加)
 export interface SearchParams {
   keyword?: string; // フリーワード（ホテル名など）
+  largeClassCode?: string; // 大分類
+  middleClassCode?: string; // 中分類
+  smallClassCode?: string; // 小分類
   checkinDate?: string; // チェックイン日 (YYYY-MM-DD)
   checkoutDate?: string; // チェックインアウト日 (YYYY-MM-DD)
   adultNum?: number; // 宿泊人数（大人）

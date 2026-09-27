@@ -1,20 +1,48 @@
 import { NextResponse } from "next/server";
-import { searchHotelsByKeyword } from "@/src/lib/rakuten";
+import { searchHotelsByKeyword, searchVacantHotels } from "@/src/lib/rakuten";
+import { Hotel } from "@/src/types/hotel";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const keyword = searchParams.get("keyword") || undefined;
 
-  // キーワードがない場合のエラーハンドリング
-  if (!keyword) {
+  // パラメータ取得
+  const keyword = searchParams.get("keyword") || undefined;
+  const middleClassCode = searchParams.get("middleClassCode") || undefined;
+  const smallClassCode = searchParams.get("smallClassCode") || undefined;
+  const checkinDate = searchParams.get("checkinDate") || undefined;
+  const checkoutDate = searchParams.get("checkoutDate") || undefined;
+  const adultNumParam = searchParams.get("adultNum");
+  const adultNum = adultNumParam ? Number(adultNumParam) : undefined;
+
+  // バリデーションチェック（どちらの検索条件も満たしていない場合）
+  if (!keyword && (!checkinDate || !checkoutDate)) {
     return NextResponse.json(
-      { error: "検索キーワード（エリアや地名、ホテル名）を指定してください。" },
+      {
+        error:
+          "検索キーワード、または日程（チェックイン・チェックアウト日）を指定してください。",
+      },
       { status: 400 },
     );
   }
 
   try {
-    const hotels = await searchHotelsByKeyword(keyword);
+    let hotels: Hotel[] = [];
+
+    if (keyword) {
+      // 1. キーワード検索
+      hotels = await searchHotelsByKeyword(keyword);
+    } else {
+      // 2. 空室検索
+      hotels = await searchVacantHotels({
+        largeClassCode: "japan",
+        middleClassCode: middleClassCode || "tokyo",
+        smallClassCode: smallClassCode || "tokyo",
+        checkinDate,
+        checkoutDate,
+        adultNum,
+      });
+    }
+
     return NextResponse.json({ hotels });
   } catch (error: any) {
     console.error("API Route Error:", error);

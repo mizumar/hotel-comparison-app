@@ -1,44 +1,107 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import { SearchForm } from "@/src/components/SearchForm";
+import "@testing-library/jest-dom";
+import { SearchForm } from "../SearchForm";
 
-describe("SearchForm Component", () => {
+describe("SearchForm コンポーネント", () => {
   const mockOnSearch = jest.fn();
 
   beforeEach(() => {
     mockOnSearch.mockClear();
   });
 
-  // TC-SF-01: 初期表示確認（キーワード入力とボタンのみ）
-  test("TC-SF-01: renders keyword input and submit button", () => {
+  test("【TC-SF-01】初期表示時にキーワード検索タブがアクティブになっていること", () => {
     render(<SearchForm onSearch={mockOnSearch} isLoading={false} />);
 
-    expect(
-      screen.getByPlaceholderText(/地名や駅名、ホテル名（例: 仙台、東京）/i),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /検索/i })).toBeInTheDocument();
+    // キーワード入力欄と送信ボタンが表示されていること
+    expect(screen.getByTestId("keyword-input")).toBeInTheDocument();
+    expect(screen.getByTestId("submit-button")).toBeInTheDocument();
+
+    // 空室検索側の要素が表示されていないこと
+    expect(screen.queryByTestId("area-select")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("checkin-input")).not.toBeInTheDocument();
   });
 
-  // TC-SF-02: 正常送信（キーワード検索）
-  test("TC-SF-02: calls onSearch with keyword when submitted", () => {
+  test("【TC-SF-02】「日程・空室検索」タブ切り替え時に該当フォームが表示されること", () => {
     render(<SearchForm onSearch={mockOnSearch} isLoading={false} />);
 
-    const input =
-      screen.getByPlaceholderText(/地名や駅名、ホテル名（例: 仙台、東京）/i);
-    fireEvent.change(input, { target: { value: "仙台" } });
+    // 空室検索タブをクリック
+    fireEvent.click(screen.getByTestId("tab-vacant"));
 
-    fireEvent.click(screen.getByRole("button", { name: /検索/i }));
+    // 空室検索用の入力項目が表示されること
+    expect(screen.getByTestId("area-select")).toBeInTheDocument();
+    expect(screen.getByTestId("checkin-input")).toBeInTheDocument();
+    expect(screen.getByTestId("checkout-input")).toBeInTheDocument();
+    expect(screen.getByTestId("adult-num-select")).toBeInTheDocument();
 
+    // キーワード入力欄が非表示になること
+    expect(screen.queryByTestId("keyword-input")).not.toBeInTheDocument();
+  });
+
+  test("【TC-SF-03】キーワード検索フォームから正常に検索条件が送信されること", () => {
+    render(<SearchForm onSearch={mockOnSearch} isLoading={false} />);
+
+    const keywordInput = screen.getByTestId("keyword-input");
+    const submitButton = screen.getByTestId("submit-button");
+
+    // キーワードを入力
+    fireEvent.change(keywordInput, { target: { value: "仙台" } });
+    fireEvent.click(submitButton);
+
+    // onSearch が正しい引数で呼ばれたか検証
     expect(mockOnSearch).toHaveBeenCalledTimes(1);
-    expect(mockOnSearch).toHaveBeenCalledWith({ keyword: "仙台" });
+    expect(mockOnSearch).toHaveBeenCalledWith({
+      keyword: "仙台",
+    });
   });
 
-  // TC-SF-05: ローディング状態
-  test("TC-SF-05: disables input and button when isLoading is true", () => {
+  test("【TC-SF-04】空室検索フォームからエリア・日付・人数の条件が送信されること", () => {
+    render(<SearchForm onSearch={mockOnSearch} isLoading={false} />);
+
+    // タブ切り替え
+    fireEvent.click(screen.getByTestId("tab-vacant"));
+
+    // 入力項目を変更
+    fireEvent.change(screen.getByTestId("area-select"), {
+      target: { value: "tazawa" }, // 秋田県（田沢）
+    });
+    fireEvent.change(screen.getByTestId("checkin-input"), {
+      target: { value: "2026-10-01" },
+    });
+    fireEvent.change(screen.getByTestId("checkout-input"), {
+      target: { value: "2026-10-02" },
+    });
+    fireEvent.change(screen.getByTestId("adult-num-select"), {
+      target: { value: "2" },
+    });
+
+    // フォーム送信
+    fireEvent.click(screen.getByTestId("submit-button"));
+
+    // onSearch が選択した小区分コード対応のエリアパラメータで呼ばれること
+    expect(mockOnSearch).toHaveBeenCalledTimes(1);
+    expect(mockOnSearch).toHaveBeenCalledWith({
+      largeClassCode: "japan",
+      middleClassCode: "akita",
+      smallClassCode: "tazawa",
+      checkinDate: "2026-10-01",
+      checkoutDate: "2026-10-02",
+      adultNum: 2,
+    });
+  });
+
+  test("【TC-SF-05】isLoading が true の場合に各フィールドとボタンが非活性になること", () => {
     render(<SearchForm onSearch={mockOnSearch} isLoading={true} />);
 
-    expect(screen.getByRole("button", { name: /検索中.../i })).toBeDisabled();
-    expect(
-      screen.getByPlaceholderText(/地名や駅名、ホテル名（例: 仙台、東京）/i),
-    ).toBeDisabled();
+    // キーワードタブの検証
+    expect(screen.getByTestId("keyword-input")).toBeDisabled();
+    expect(screen.getByTestId("submit-button")).toBeDisabled();
+    expect(screen.getByTestId("submit-button")).toHaveTextContent("検索中...");
+
+    // 空室検索タブの検証
+    fireEvent.click(screen.getByTestId("tab-vacant"));
+    expect(screen.getByTestId("area-select")).toBeDisabled();
+    expect(screen.getByTestId("checkin-input")).toBeDisabled();
+    expect(screen.getByTestId("checkout-input")).toBeDisabled();
+    expect(screen.getByTestId("adult-num-select")).toBeDisabled();
   });
 });

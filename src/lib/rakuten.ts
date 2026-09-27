@@ -49,3 +49,43 @@ export async function searchHotelsByKeyword(keyword: string): Promise<Hotel[]> {
 
   return transformRakutenHotelData(data);
 }
+
+// 空室検索 API 呼び出し
+export async function searchVacantHotels(
+  searchParams: SearchParams,
+): Promise<Hotel[]> {
+  const appId = process.env.RAKUTEN_APPLICATION_ID;
+  const accessKey = process.env.RAKUTEN_ACCESS_KEY;
+
+  if (!appId || !accessKey) {
+    throw new Error("RAKUTEN_APPLICATION_ID or RAKUTEN_ACCESS_KEY is not set");
+  }
+
+  const endpoint =
+    "https://openapi.rakuten.co.jp/engine/api/Travel/VacantHotelSearch/20170426";
+
+  const params = new URLSearchParams({
+    applicationId: appId.trim(),
+    accessKey: accessKey.trim(),
+    format: "json",
+    largeClassCode: searchParams.largeClassCode || "japan",
+    middleClassCode: searchParams.middleClassCode || "kyoto",
+    smallClassCode: searchParams.smallClassCode || "kyoto", // ← 追加
+    checkinDate: searchParams.checkinDate || "",
+    checkoutDate: searchParams.checkoutDate || "",
+    adultNum: String(searchParams.adultNum || 2),
+  });
+
+  const res = await customFetch(endpoint, params);
+  const data = await res.json();
+
+  if (!res.ok) {
+    // 🔍 楽天 API から返ってきたエラーメッセージの詳細をターミナルに出力
+    console.error("Rakuten API Error Response:", JSON.stringify(data, null, 2));
+    throw new Error(
+      data.error_description || data.error || "空室検索に失敗しました。",
+    );
+  }
+
+  return transformRakutenHotelData(data);
+}

@@ -21,6 +21,12 @@ export default function Home() {
       const queryParams = new URLSearchParams();
 
       if (params.keyword) queryParams.set("keyword", params.keyword);
+      if (params.largeClassCode)
+        queryParams.set("largeClassCode", params.largeClassCode);
+      if (params.middleClassCode)
+        queryParams.set("middleClassCode", params.middleClassCode);
+      if (params.smallClassCode)
+        queryParams.set("smallClassCode", params.smallClassCode);
       if (params.checkinDate)
         queryParams.set("checkinDate", params.checkinDate);
       if (params.checkoutDate)
