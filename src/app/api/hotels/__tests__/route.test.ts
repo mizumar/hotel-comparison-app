@@ -26,7 +26,7 @@ describe("GET /api/hotels Route Handler", () => {
 
     expect(res.status).toBe(400);
     expect(data.error).toBe(
-      "検索キーワード（エリアや地名、ホテル名）を指定してください。",
+      "検索キーワード、または日程（チェックイン・チェックアウト日）を指定してください。",
     );
   });
 
