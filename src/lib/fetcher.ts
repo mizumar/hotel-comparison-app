@@ -30,8 +30,6 @@ export async function customFetch(
     Referer: appUrl,
     Origin: appUrl,
   };
-  console.log(endpoint);
-  console.log(defaultHeaders);
 
   return await fetch(`${endpoint}?${params.toString()}`, {
     ...options,
