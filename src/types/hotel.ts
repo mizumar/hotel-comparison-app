@@ -21,4 +21,8 @@ export interface SearchParams {
   latitude?: number; // 緯度 (エリア・現在地検索用)
   longitude?: number; // 経度 (エリア・現在地検索用)
   searchRadius?: number; // 検索半径 (km)
+  // Phase 3-2 追加パラメータ
+  minCharge?: number; // 最低料金 (円)
+  maxCharge?: number; // 最高料金 (円)
+  sort?: string; // ソート順 ('standard' | '+roomCharge' | '-roomCharge')
 }

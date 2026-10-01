@@ -14,6 +14,14 @@ export async function GET(request: Request) {
   const adultNumParam = searchParams.get("adultNum");
   const adultNum = adultNumParam ? Number(adultNumParam) : undefined;
 
+  // パラメータ取得部に追加
+  const minChargeParam = searchParams.get("minCharge");
+  const maxChargeParam = searchParams.get("maxCharge");
+  const sort = searchParams.get("sort") || undefined;
+
+  const minCharge = minChargeParam ? Number(minChargeParam) : undefined;
+  const maxCharge = maxChargeParam ? Number(maxChargeParam) : undefined;
+
   // バリデーションチェック（どちらの検索条件も満たしていない場合）
   if (!keyword && (!checkinDate || !checkoutDate)) {
     return NextResponse.json(
@@ -40,6 +48,9 @@ export async function GET(request: Request) {
         checkinDate,
         checkoutDate,
         adultNum,
+        minCharge,
+        maxCharge,
+        sort,
       });
     }
 

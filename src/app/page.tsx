@@ -33,6 +33,11 @@ export default function Home() {
         queryParams.set("checkoutDate", params.checkoutDate);
       if (params.adultNum)
         queryParams.set("adultNum", params.adultNum.toString());
+      if (params.minCharge)
+        queryParams.set("minCharge", String(params.minCharge));
+      if (params.maxCharge)
+        queryParams.set("maxCharge", String(params.maxCharge));
+      if (params.sort) queryParams.set("sort", params.sort);
 
       const res = await fetch(`/api/hotels?${queryParams.toString()}`);
       const data = await res.json();

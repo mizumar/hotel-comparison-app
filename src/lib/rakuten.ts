@@ -76,6 +76,17 @@ export async function searchVacantHotels(
     adultNum: String(searchParams.adultNum || 2),
   });
 
+  // 料金・ソートパラメータの追加
+  if (searchParams.minCharge) {
+    params.append("minCharge", String(searchParams.minCharge));
+  }
+  if (searchParams.maxCharge) {
+    params.append("maxCharge", String(searchParams.maxCharge));
+  }
+  if (searchParams.sort) {
+    params.append("sort", searchParams.sort);
+  }
+
   const res = await customFetch(endpoint, params);
   const data = await res.json();
 

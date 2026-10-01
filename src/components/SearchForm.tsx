@@ -31,6 +31,11 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
   const [checkoutDate, setCheckoutDate] = useState("");
   const [adultNum, setAdultNum] = useState<number>(2);
 
+  // Phase 3-2 追加ステート
+  const [minCharge, setMinCharge] = useState<string>("");
+  const [maxCharge, setMaxCharge] = useState<string>("");
+  const [sort, setSort] = useState<string>("standard");
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -49,6 +54,9 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
         checkinDate,
         checkoutDate,
         adultNum,
+        minCharge: minCharge ? Number(minCharge) : undefined,
+        maxCharge: maxCharge ? Number(maxCharge) : undefined,
+        sort: sort !== "standard" ? sort : undefined,
       });
     }
   };
@@ -128,6 +136,7 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
                 ))}
               </select>
             </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -175,6 +184,58 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
                       大人 {num}名
                     </option>
                   ))}
+                </select>
+              </div>
+            </div>
+
+            {/* 料金上限・下限、並び替え指定 */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-gray-100">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  最低料金 (円)
+                </label>
+                <input
+                  type="number"
+                  data-testid="min-charge-input"
+                  value={minCharge}
+                  onChange={(e) => setMinCharge(e.target.value)}
+                  placeholder="例: 5000"
+                  min={0}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black text-sm"
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  最高料金 (円)
+                </label>
+                <input
+                  type="number"
+                  data-testid="max-charge-input"
+                  value={maxCharge}
+                  onChange={(e) => setMaxCharge(e.target.value)}
+                  placeholder="例: 20000"
+                  min={0}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black text-sm"
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  並び替え
+                </label>
+                <select
+                  data-testid="sort-select"
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black text-sm bg-white"
+                  disabled={isLoading}
+                >
+                  <option value="standard">標準</option>
+                  <option value="+roomCharge">料金が安い順</option>
+                  <option value="-roomCharge">料金が高い順</option>
                 </select>
               </div>
             </div>
