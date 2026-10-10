@@ -7,6 +7,7 @@ import { MagnifyingGlassIcon, CalendarIcon } from "@phosphor-icons/react";
 interface SearchFormProps {
   onSearch: (params: SearchParams) => void;
   isLoading: boolean;
+  initialParams?: SearchParams; // Step 2: URLパラメータからの初期値を受け取るプロップを追加
 }
 
 const AREA_OPTIONS = [
@@ -22,19 +23,37 @@ const AREA_OPTIONS = [
   { label: "沖縄県（那覇）", middle: "okinawa", small: "naha" },
 ];
 
-export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
-  const [activeTab, setActiveTab] = useState<"keyword" | "vacant">("keyword");
+export function SearchForm({
+  onSearch,
+  isLoading,
+  initialParams,
+}: SearchFormProps) {
+  // initialParams にチェックイン日があれば「vacant (空室検索)」タブを初期選択、なければ「keyword」タブ
+  const [activeTab, setActiveTab] = useState<"keyword" | "vacant">(
+    initialParams?.checkinDate ? "vacant" : "keyword",
+  );
 
-  const [keyword, setKeyword] = useState("");
-  const [selectedAreaCode, setSelectedAreaCode] = useState<string>("tokyo");
-  const [checkinDate, setCheckinDate] = useState("");
-  const [checkoutDate, setCheckoutDate] = useState("");
-  const [adultNum, setAdultNum] = useState<number>(2);
-
-  // Phase 3-2 追加ステート
-  const [minCharge, setMinCharge] = useState<string>("");
-  const [maxCharge, setMaxCharge] = useState<string>("");
-  const [sort, setSort] = useState<string>("standard");
+  // URL パラメータに初期値があれば State の初期値としてセット
+  const [keyword, setKeyword] = useState(initialParams?.keyword || "");
+  const [selectedAreaCode, setSelectedAreaCode] = useState<string>(
+    initialParams?.smallClassCode || "ritou",
+  );
+  const [checkinDate, setCheckinDate] = useState(
+    initialParams?.checkinDate || "",
+  );
+  const [checkoutDate, setCheckoutDate] = useState(
+    initialParams?.checkoutDate || "",
+  );
+  const [adultNum, setAdultNum] = useState<number>(
+    initialParams?.adultNum || 2,
+  );
+  const [minCharge, setMinCharge] = useState<string>(
+    initialParams?.minCharge ? String(initialParams.minCharge) : "",
+  );
+  const [maxCharge, setMaxCharge] = useState<string>(
+    initialParams?.maxCharge ? String(initialParams.maxCharge) : "",
+  );
+  const [sort, setSort] = useState<string>(initialParams?.sort || "standard");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
