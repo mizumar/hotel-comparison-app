@@ -1,6 +1,16 @@
 import { render, screen } from "@testing-library/react";
+import "@testing-library/jest-dom";
 import { HotelList } from "../HotelList";
 import { Hotel } from "@/src/types/hotel";
+
+// FavoriteButton コンポーネントのモック化
+jest.mock("@/src/components/FavoriteButton", () => ({
+  FavoriteButton: ({ hotel }: { hotel: Hotel }) => (
+    <button data-testid={`favorite-button-${hotel.id}`}>
+      Favorite {hotel.name}
+    </button>
+  ),
+}));
 
 describe("src/components/HotelList.tsx", () => {
   const mockHotels: Hotel[] = [
@@ -24,22 +34,46 @@ describe("src/components/HotelList.tsx", () => {
     },
   ];
 
-  // 【3-3】 カードレンダリング
-  it("[3-3] 渡された hotels 配列の要素数ぶんカードが表示され、金額や情報が描画されること", () => {
-    render(<HotelList hotels={mockHotels} />);
+  test("【TC-HL-01】お気に入りボタンの表示: ホテルカードを描画した際、各カード内に FavoriteButton が正常に表示・レンダリングされること", () => {
+    render(<HotelList hotels={mockHotels} isLoading={false} />);
 
-    // ホテル名が表示されているか
+    // カードの描画確認
+    expect(screen.getByTestId("hotel-card-1")).toBeInTheDocument();
+    expect(screen.getByTestId("hotel-card-2")).toBeInTheDocument();
+
+    // ホテル名・料金の描画確認
     expect(screen.getByText("仙台グランホテル")).toBeInTheDocument();
     expect(screen.getByText("仙台ビジネスイン")).toBeInTheDocument();
+    expect(screen.getByText("¥8,500〜")).toBeInTheDocument();
+    expect(screen.getByText("¥4,200〜")).toBeInTheDocument();
 
-    // 最安料金の表示フォーマット確認
-    expect(screen.getByText("¥8,500")).toBeInTheDocument();
-    expect(screen.getByText("¥4,200")).toBeInTheDocument();
+    // 各カード内にお気に入りボタン（FavoriteButton）が存在すること
+    expect(screen.getByTestId("favorite-button-1")).toBeInTheDocument();
+    expect(screen.getByTestId("favorite-button-2")).toBeInTheDocument();
 
-    // リンクボタンの有無
+    // 楽天トラベルリンク確認
     const links = screen.getAllByRole("link", { name: "楽天トラベルで見る" });
     expect(links).toHaveLength(2);
     expect(links[0]).toHaveAttribute("href", "https://example.com/hotel1");
-    expect(links[1]).toHaveAttribute("href", "https://example.com/hotel2");
+  });
+
+  test("【TC-HL-02】0件時・ローディング表示: isLoading={true} または hotels=[] の場合、スケルトンUI またはメッセージが表示されること", () => {
+    // パターンA: isLoading={true} の場合にスケルトンが表示され、カードが表示されないこと
+    const { rerender } = render(<HotelList hotels={[]} isLoading={true} />);
+    expect(screen.queryByTestId("hotel-card-1")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("該当するホテルが見つかりませんでした。"),
+    ).not.toBeInTheDocument();
+
+    // パターンB: hotels=[] かつ isLoading={false} の場合に 0件メッセージが表示されること
+    rerender(<HotelList hotels={[]} isLoading={false} />);
+    expect(
+      screen.getByText("該当するホテルが見つかりませんでした。"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "検索条件（エリア・日付・金額など）を変更して再度お試しください。",
+      ),
+    ).toBeInTheDocument();
   });
 });

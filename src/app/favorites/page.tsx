@@ -64,7 +64,7 @@ export default function FavoritesPage() {
             </Link>
           </div>
         ) : (
-          <HotelList hotels={favorites} />
+          <HotelList hotels={favorites} isLoading={false} />
         )}
       </div>
     </main>

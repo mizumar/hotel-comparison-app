@@ -1,86 +1,132 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { SearchForm } from "@/src/components/SearchForm";
 import { HotelList } from "@/src/components/HotelList";
 import { Hotel, SearchParams } from "@/src/types/hotel";
 
-export default function Home() {
+function HomeContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasSearched, setHasSearched] = useState(false);
 
-  const handleSearch = async (params: SearchParams) => {
-    setIsLoading(true);
-    setError(null);
-    setHasSearched(true);
+  // URL のクエリパラメータから SearchParams オブジェクトを抽出
+  const getSearchParamsFromUrl = useCallback((): SearchParams => {
+    const keyword = searchParams.get("keyword") || undefined;
+    const middleClassCode = searchParams.get("middleClassCode") || undefined;
+    const smallClassCode = searchParams.get("smallClassCode") || undefined;
+    const checkinDate = searchParams.get("checkinDate") || undefined;
+    const checkoutDate = searchParams.get("checkoutDate") || undefined;
 
-    try {
-      // SearchParams オブジェクトから URLSearchParams を構築
-      const queryParams = new URLSearchParams();
+    const adultNum = searchParams.get("adultNum")
+      ? Number(searchParams.get("adultNum"))
+      : undefined;
+    const minCharge = searchParams.get("minCharge")
+      ? Number(searchParams.get("minCharge"))
+      : undefined;
+    const maxCharge = searchParams.get("maxCharge")
+      ? Number(searchParams.get("maxCharge"))
+      : undefined;
+    const sort = searchParams.get("sort") || undefined;
 
-      if (params.keyword) queryParams.set("keyword", params.keyword);
-      if (params.largeClassCode)
-        queryParams.set("largeClassCode", params.largeClassCode);
-      if (params.middleClassCode)
-        queryParams.set("middleClassCode", params.middleClassCode);
-      if (params.smallClassCode)
-        queryParams.set("smallClassCode", params.smallClassCode);
-      if (params.checkinDate)
-        queryParams.set("checkinDate", params.checkinDate);
-      if (params.checkoutDate)
-        queryParams.set("checkoutDate", params.checkoutDate);
-      if (params.adultNum)
-        queryParams.set("adultNum", params.adultNum.toString());
-      if (params.minCharge)
-        queryParams.set("minCharge", String(params.minCharge));
-      if (params.maxCharge)
-        queryParams.set("maxCharge", String(params.maxCharge));
-      if (params.sort) queryParams.set("sort", params.sort);
+    return {
+      keyword,
+      largeClassCode: "japan",
+      middleClassCode,
+      smallClassCode,
+      checkinDate,
+      checkoutDate,
+      adultNum,
+      minCharge,
+      maxCharge,
+      sort,
+    };
+  }, [searchParams]);
 
-      const res = await fetch(`/api/hotels?${queryParams.toString()}`);
-      const data = await res.json();
+  // URL パラメータ変更時に自動で API 呼び出し
+  useEffect(() => {
+    const params = getSearchParamsFromUrl();
 
-      if (!res.ok) {
-        throw new Error(data.error || "ホテルデータの取得に失敗しました。");
-      }
-
-      setHotels(data.hotels || []);
-    } catch (err: any) {
-      setError(err.message || "エラーが発生しました。");
+    // 検索条件が一切ない初期画面の場合はフェッチしない
+    if (!params.keyword && (!params.checkinDate || !params.checkoutDate)) {
       setHotels([]);
-    } finally {
-      setIsLoading(false);
+      return;
     }
+
+    const fetchHotels = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const query = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined && value !== "") {
+            query.set(key, String(value));
+          }
+        });
+
+        const res = await fetch(`/api/hotels?${query.toString()}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || "ホテル情報の取得に失敗しました。");
+        }
+
+        setHotels(data.hotels || []);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHotels();
+  }, [searchParams, getSearchParamsFromUrl]);
+
+  // フォーム送信時に URL を更新する関数
+  const handleSearch = (params: SearchParams) => {
+    const query = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== "") {
+        query.set(key, String(value));
+      }
+    });
+
+    // URL を更新（ブラウザの履歴に残すため push）
+    router.push(`/?${query.toString()}`);
   };
 
-  return (
-    <main className="min-h-screen p-8 bg-gray-50">
-      <div className="max-w-4xl mx-auto text-center mb-8">
-        <h1 className="text-3xl font-extrabold text-gray-900 mb-2">
-          ホテル検索
-        </h1>
-        <p className="text-gray-600">
-          エリアや日程・人数を指定して全国のホテル・宿を検索できます
-        </p>
-      </div>
+  const initialParams = getSearchParamsFromUrl();
 
-      <SearchForm onSearch={handleSearch} isLoading={isLoading} />
+  return (
+    <main className=" bg-gray-50 container mx-auto px-4 py-8">
+      <SearchForm
+        onSearch={handleSearch}
+        isLoading={isLoading}
+        initialParams={initialParams}
+      />
 
       {error && (
-        <div className="max-w-xl mx-auto my-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-center">
+        <div className="max-w-3xl mx-auto my-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
           {error}
         </div>
       )}
 
-      {!isLoading && hasSearched && hotels.length === 0 && !error && (
-        <p className="text-center text-gray-500 my-12">
-          該当するホテルが見つかりませんでした。条件を変更してお試しください。
-        </p>
-      )}
-
-      <HotelList hotels={hotels} />
+      {/* ホテル一覧表示エリア */}
+      <HotelList hotels={hotels} isLoading={isLoading} />
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="text-center py-8">読み込み中...</div>}>
+      <HomeContent />
+    </Suspense>
   );
 }
