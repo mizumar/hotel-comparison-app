@@ -1,18 +1,15 @@
 "use client";
 
-import { useEffect, useState, useCallback, Suspense } from "react";
+import { useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { SearchForm } from "@/src/components/SearchForm";
 import { HotelList } from "@/src/components/HotelList";
-import { Hotel, SearchParams } from "@/src/types/hotel";
+import { SearchParams } from "@/src/types/hotel";
+import { useHotelSearch } from "@/src/hooks/useHotelSearch";
 
 function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-
-  const [hotels, setHotels] = useState<Hotel[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // URL のクエリパラメータから SearchParams オブジェクトを抽出
   const getSearchParamsFromUrl = useCallback((): SearchParams => {
@@ -47,45 +44,20 @@ function HomeContent() {
     };
   }, [searchParams]);
 
-  // URL パラメータ変更時に自動で API 呼び出し
-  useEffect(() => {
-    const params = getSearchParamsFromUrl();
+  const currentParams = getSearchParamsFromUrl();
 
-    // 検索条件が一切ない初期画面の場合はフェッチしない
-    if (!params.keyword && (!params.checkinDate || !params.checkoutDate)) {
-      setHotels([]);
-      return;
-    }
+  // 検索条件が一切ない初期画面の場合はフェッチを有効化しない
+  const isSearchEnabled = Boolean(
+    currentParams.keyword ||
+    (currentParams.checkinDate && currentParams.checkoutDate),
+  );
 
-    const fetchHotels = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const query = new URLSearchParams();
-        Object.entries(params).forEach(([key, value]) => {
-          if (value !== undefined && value !== "") {
-            query.set(key, String(value));
-          }
-        });
-
-        const res = await fetch(`/api/hotels?${query.toString()}`);
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.error || "ホテル情報の取得に失敗しました。");
-        }
-
-        setHotels(data.hotels || []);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchHotels();
-  }, [searchParams, getSearchParamsFromUrl]);
+  // TanStack Query によるデータフェッチ（キャッシュ・ローディング・エラー自動管理）
+  const {
+    data: hotels = [],
+    isLoading,
+    error,
+  } = useHotelSearch(currentParams, isSearchEnabled);
 
   // フォーム送信時に URL を更新する関数
   const handleSearch = (params: SearchParams) => {
@@ -97,23 +69,20 @@ function HomeContent() {
       }
     });
 
-    // URL を更新（ブラウザの履歴に残すため push）
     router.push(`/?${query.toString()}`);
   };
-
-  const initialParams = getSearchParamsFromUrl();
 
   return (
     <main className=" bg-gray-50 container mx-auto px-4 py-8">
       <SearchForm
         onSearch={handleSearch}
         isLoading={isLoading}
-        initialParams={initialParams}
+        initialParams={currentParams}
       />
 
       {error && (
         <div className="max-w-3xl mx-auto my-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-          {error}
+          {error.message || "ホテル情報の取得に失敗しました。"}
         </div>
       )}
 
