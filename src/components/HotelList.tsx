@@ -8,7 +8,9 @@ interface HotelListProps {
   hotels: Hotel[];
   isLoading: boolean;
 }
-
+/**
+ * 検索結果のホテル一覧を表示するコンポーネント
+ */
 export function HotelList({ hotels, isLoading }: HotelListProps) {
   // 1. ローディング中の表示（スケルトン UI）
   if (isLoading) {
