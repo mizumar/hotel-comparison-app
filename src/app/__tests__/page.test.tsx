@@ -2,12 +2,32 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import Home from "../page";
 import { useRouter, useSearchParams } from "next/navigation";
+import React from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Next.js ナビゲーションのモック化
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(),
   useSearchParams: jest.fn(),
 }));
+
+const createTestQueryClient = () =>
+  new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+        gcTime: 0,
+      },
+    },
+  });
+
+const renderWithQueryClient = (ui: React.ReactElement) => {
+  const queryClient = createTestQueryClient();
+
+  return render(
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
+  );
+};
 
 // API (fetch) のモック化
 global.fetch = jest.fn();
@@ -20,14 +40,12 @@ describe("src/app/page.tsx", () => {
     (useRouter as jest.Mock).mockReturnValue({ push: mockPush });
   });
 
-  test("【TC-PL-01】URLからの初期検索: クエリ付きURL（?keyword=仙台）でアクセスした際、フォームに条件がセットされ自動でホテル一覧が取得・表示されること", async () => {
-    // URL クエリに ?keyword=仙台 がある状態を想定
+  test("【TC-PL-01】URLからの初期検索: クエリ付きURLでアクセスした際、条件がセットされホテル一覧が取得・表示されること", async () => {
     (useSearchParams as jest.Mock).mockReturnValue(
       new URLSearchParams("keyword=仙台"),
     );
 
-    // API のレスポンスをモック
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
+    const fetchMock = jest.spyOn(global, "fetch").mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         hotels: [
@@ -42,35 +60,38 @@ describe("src/app/page.tsx", () => {
           },
         ],
       }),
-    });
+    } as Response);
 
-    render(<Home />);
+    try {
+      renderWithQueryClient(<Home />);
 
-    // フォームの入力欄に「仙台」が自動で入っていること
-    const keywordInput = screen.getByTestId(
-      "keyword-input",
-    ) as HTMLInputElement;
-    expect(keywordInput.value).toBe("仙台");
+      const keywordInput = screen.getByTestId(
+        "keyword-input",
+      ) as HTMLInputElement;
 
-    // 自動的に /api/hotels?keyword=仙台 がフェッチされること
-    await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("/api/hotels?"),
-      );
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("keyword=%E4%BB%99%E5%8F%B0"), // 「仙台」のエンコード値
-      );
-    });
+      expect(keywordInput.value).toBe("仙台");
 
-    // 検索結果が表示されること
-    expect(await screen.findByText("仙台グランホテル")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          expect.stringContaining("/api/hotels?"),
+        );
+
+        expect(fetchMock).toHaveBeenCalledWith(
+          expect.stringContaining("keyword=%E4%BB%99%E5%8F%B0"),
+        );
+      });
+
+      expect(await screen.findByText("仙台グランホテル")).toBeInTheDocument();
+    } finally {
+      fetchMock.mockRestore();
+    }
   });
 
   test("【TC-PL-02】フォーム送信時のURL更新: 空室条件を入力して検索送信した際、URL に各パラメータがセットされ（router.push）、ブラウザ履歴が更新されること", async () => {
     // 初期状態はクエリなし
     (useSearchParams as jest.Mock).mockReturnValue(new URLSearchParams(""));
 
-    render(<Home />);
+    renderWithQueryClient(<Home />);
 
     // 空室検索タブに切替
     fireEvent.click(screen.getByTestId("tab-vacant"));
