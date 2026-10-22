@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import type { HotelDetail } from "@/src/types/hotel";
+import { getHotelDetail } from "@/src/lib/rakuten";
 
 interface HotelDetailPageProps {
   params: Promise<{ id: string }>;
@@ -17,22 +18,11 @@ export default async function HotelDetailPage({
   }
 
   // サーバー側から施設情報を取得
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"}/api/hotels/${id}`,
-    { cache: "no-store" },
-  );
+  const hotel = await getHotelDetail(id);
 
-  if (response.status === 404) {
+  if (!hotel) {
     notFound();
   }
-
-  if (!response.ok) {
-    throw new Error("ホテル情報の取得に失敗しました。");
-  }
-
-  const data: { hotel: HotelDetail } = await response.json();
-  const hotel = data.hotel;
-
   return (
     <main className=" container mx-auto max-w-5xl px-4 py-8">
       <a href="/" className="mb-6 inline-block text-blue-600 hover:underline">
