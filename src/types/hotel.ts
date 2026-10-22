@@ -1,4 +1,4 @@
-// 1. 既存の Hotel 型（楽天 API のレスポンスに合わせフィールド名を一部拡張）
+/** ホテル検索結果の一覧表示に使用する型 */
 export interface Hotel {
   id: string;
   name: string;
@@ -9,7 +9,7 @@ export interface Hotel {
   rakutenUrl: string;
 }
 
-// 2. 検索フォーム・API リクエスト用の型定義 (新規追加)
+/** 検索フォーム・API リクエスト用の型定義 */
 export interface SearchParams {
   keyword?: string; // フリーワード（ホテル名など）
   largeClassCode?: string; // 大分類
@@ -25,4 +25,49 @@ export interface SearchParams {
   minCharge?: number; // 最低料金 (円)
   maxCharge?: number; // 最高料金 (円)
   sort?: string; // ソート順 ('standard' | '+roomCharge' | '-roomCharge')
+}
+
+/** ホテルの詳細情報を含む型 */
+export interface HotelDetail extends Hotel {
+  // 施設情報
+  hotelKanaName: string;
+  hotelSpecial: string;
+  postalCode: string;
+  telephoneNo: string;
+  faxNo: string;
+  parkingInformation: string;
+  nearestStation: string;
+
+  // 緯度・経度
+  latitude: number;
+  longitude: number;
+
+  // 施設・客室・地図の画像
+  planListUrl: string;
+  dpPlanListUrl: string;
+  reviewUrl: string;
+  hotelThumbnailUrl: string;
+  roomImageUrl: string;
+  roomThumbnailUrl: string;
+  hotelMapImageUrl: string;
+
+  // 口コミ情報
+  reviewCount: number | null;
+  reviewAverage: number | null;
+  userReview: string | null;
+
+  // 評価の内訳
+  ratingInfo: HotelRatingInfo | null;
+}
+
+/** ホテルの評価内訳 */
+export interface HotelRatingInfo {
+  serviceAverage: number;
+  locationAverage: number;
+  roomAverage: number;
+  equipmentAverage: number;
+  bathAverage: number;
+  breakfastAverage: number;
+  dinnerAverage: number;
+  cleanlinessAverage: number;
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Hotel } from "@/src/types/hotel";
 import { FavoriteButton } from "@/src/components/FavoriteButton";
 import { MapPinLineIcon } from "@phosphor-icons/react";
@@ -93,7 +94,12 @@ export function HotelList({ hotels, isLoading }: HotelListProps) {
             <div className="p-4 flex-1 flex flex-col justify-between">
               <div>
                 <h3 className="font-bold text-gray-900 text-base line-clamp-2 mb-1">
-                  {hotel.name}
+                  <Link
+                    href={`/hotels/${hotel.id}`}
+                    className="hover:underline"
+                  >
+                    {hotel.name}
+                  </Link>
                 </h3>
                 {hotel.address && (
                   <p className="mb-2 flex min-w-0 items-center justify-left gap-1 text-center text-xs text-gray-500">
